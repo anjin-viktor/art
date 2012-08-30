@@ -312,6 +312,10 @@ void	Generator_C_Header(CTemplate &tpl, ofstream &head){
     head << "#ifndef __pd_" << tpl.prefix << "h__" << endl;
     head << "#define __pd_" << tpl.prefix << "h__" << endl << endl;
 
+
+    head << "#ifndef __cplusplus" << endl;
+
+
     if(tpl.multithreaded){
         if(tpl.threading == "posix"){
             head << "#include <pthread.h>" << endl;
@@ -370,10 +374,6 @@ void	Generator_C_Header(CTemplate &tpl, ofstream &head){
     }
 
 
-    head << "#ifdef __cplusplus" << endl;
-    head << "extern \"C\" {" << endl;
-    head << "#endif" << endl << endl;
-
 
 
     if(tpl.compiler_type == "gcc"){
@@ -417,10 +417,8 @@ void	Generator_C_Header(CTemplate &tpl, ofstream &head){
     Generator_C_Header_Declaration(tpl, head);
     Generator_C_Header_Redefenition(tpl, head);
     head << endl;
-    head << "#ifdef __cplusplus" << endl;
-    head << "}" << endl;
-    head << "#endif" << endl << endl;
 
+    head << "#endif" << endl;
     head << "#endif" << endl;
 }
 
