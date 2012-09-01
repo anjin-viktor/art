@@ -104,6 +104,8 @@ public:
     reallocators,
     operators;
 
+    string  ccLabel; //метка, использующаяся в заголовочном файле с определением этого ресурса
+                     //для организации условной компиляции
 #ifdef ART_DEBUG
     void dump(size_t ntabs);
 #endif

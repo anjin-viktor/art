@@ -2,6 +2,8 @@
 
 #include <fstream>
 
+std::string undef_str = "";
+
 void	Generator_C_StubInfo(CTemplate &tpl, ofstream &file){
     file<<
            "/***************************************************************************"
@@ -145,15 +147,22 @@ void	Generator_C_Header_Redefenition(CTemplate &tpl, ofstream &head){
 
     head << "/* foo redef BEGIN **************************************/" << endl;
     head << "#ifndef ART_NO_REDEF" << endl;
+    head << "#if __INCLUDE_LEVEL__ == 0" << endl;
+
 
     if(!tpl.fork_enabled) {
+        undef_str += "#undef fork\n"; 
         head << "#define fork()\t" << tpl.prefix <<
                 "fork_forbidden(__FILE__, __LINE__);" << endl;
     }
 
+
     tpl_domains_size = tpl.domains.size();
     for(dom_idx = 0; dom_idx < tpl_domains_size; dom_idx++){
         tmpDom = tpl.domains[dom_idx];
+
+        if(tmpDom.ccLabel.size())
+            head << "#ifdef " << tmpDom.ccLabel << endl;
 
         // allocators // this code is original. other - clones.
         tmpDom_allocators_size = tmpDom.allocators.size();
@@ -165,7 +174,10 @@ void	Generator_C_Header_Redefenition(CTemplate &tpl, ofstream &head){
             }
 
             // left part
+            undef_str += "#undef " + tmpTor.name + "\n";
             head << "#define " << tmpTor.name << "(";
+
+
             tmpTor_args_size = tmpTor.args.size();
             for(arg_idx = 1; arg_idx < tmpTor_args_size - 1; arg_idx++){
                 tmpArg = tmpTor.args[arg_idx];
@@ -182,6 +194,7 @@ void	Generator_C_Header_Redefenition(CTemplate &tpl, ofstream &head){
                 head << tmpArg.name << ", ";
             }
             head << "__FILE__, __LINE__)" << endl;
+        
         }
 
         // deallocators
@@ -194,6 +207,7 @@ void	Generator_C_Header_Redefenition(CTemplate &tpl, ofstream &head){
             }
 
             // left part
+            undef_str += "#undef " + tmpTor.name + "\n";
             head << "#define " << tmpTor.name << "(";
             tmpTor_args_size = tmpTor.args.size();
             for(arg_idx = 1; arg_idx < tmpTor_args_size - 1; arg_idx++){
@@ -223,6 +237,7 @@ void	Generator_C_Header_Redefenition(CTemplate &tpl, ofstream &head){
             }
 
             // left part
+            undef_str += "#undef " + tmpTor.name + "\n";
             head << "#define " << tmpTor.name << "(";
             tmpTor_args_size = tmpTor.args.size();
             for(arg_idx = 1; arg_idx < tmpTor_args_size - 1; arg_idx++){
@@ -252,6 +267,7 @@ void	Generator_C_Header_Redefenition(CTemplate &tpl, ofstream &head){
             }
 
             // left part
+            undef_str += "#undef " + tmpTor.name + "\n";
             head << "#define " << tmpTor.name << "(";
             tmpTor_args_size = tmpTor.args.size();
             for(arg_idx = 1; arg_idx < tmpTor_args_size - 1; arg_idx++){
@@ -281,6 +297,7 @@ void	Generator_C_Header_Redefenition(CTemplate &tpl, ofstream &head){
             }
 
             // left part
+            undef_str += "#undef " + tmpTor.name + "\n";
             head << "#define " << tmpTor.name << "(";
             tmpTor_args_size = tmpTor.args.size();
             for(arg_idx = 1; arg_idx < tmpTor_args_size - 1; arg_idx++){
@@ -299,15 +316,19 @@ void	Generator_C_Header_Redefenition(CTemplate &tpl, ofstream &head){
             }
             head << "__FILE__, __LINE__)" << endl;
         }
+        
+        if(tmpDom.ccLabel.size())
+            head << "#endif" << endl << endl;
     }
 
     head << "#endif" << endl;
     head << "/* foo redef END ****************************************/" << endl;
+    head << "#endif" << endl;
 }
 
 void	Generator_C_Header(CTemplate &tpl, ofstream &head){
     Generator_C_StubInfo(tpl, head);
-    size_t	t, i, tpl_domains_size, tmpDom_includes_size;
+    size_t	t, /*i,*/ tpl_domains_size/*, tmpDom_includes_size*/;
 
     head << "#ifndef __pd_" << tpl.prefix << "h__" << endl;
     head << "#define __pd_" << tpl.prefix << "h__" << endl << endl;
@@ -328,7 +349,7 @@ void	Generator_C_Header(CTemplate &tpl, ofstream &head){
     head << endl;
 
     tpl_domains_size = tpl.domains.size();
-    for(i = 0; i < tpl_domains_size; i++){
+/*    for(i = 0; i < tpl_domains_size; i++){
         CDomain tmpDom;
         tmpDom = tpl.domains[i];
         tmpDom_includes_size = tmpDom.includes.size();
@@ -345,9 +366,14 @@ void	Generator_C_Header(CTemplate &tpl, ofstream &head){
 
             head << endl;
         }
-    }
+    }*/
     head << endl;
 
+    head << "#include <stdio.h>" << endl;   // art uses it
+    head << "#include <stdarg.h>" << endl;  // art uses it
+
+
+#if 0
     if(tpl.compiler_type == "win32"){
         if(tpl.remote_mode){
             head << "#include <winsock2.h>" << endl;
@@ -372,7 +398,7 @@ void	Generator_C_Header(CTemplate &tpl, ofstream &head){
     } else {
         cerr << "NYI at " << __FILE__ << ":" << __LINE__ << endl;
     }
-
+#endif
 
 
 
@@ -428,9 +454,39 @@ int	Generator_C_Source_ART_Part(CTemplate &tpl, char *tplfilename,
                                 ofstream &src){
     Generator_C_StubInfo(tpl, src);
     size_t	t;
+    CTor    tmpTor;
 
     src << "#define ART_NO_REDEF" << endl;
     src << "#include \"art.h\"" << endl << endl;
+
+
+
+    src << undef_str << endl << endl;
+
+
+    if(tpl.compiler_type == "win32"){
+        if(tpl.remote_mode){
+            src << "#include <winsock2.h>" << endl;
+        } else {
+            // ???
+        }
+    } else if(tpl.compiler_type == "gcc") {
+        if(tpl.remote_mode){
+            src << "#include <sys/types.h>" << endl;
+            src << "#include <sys/socket.h>" << endl;
+            src << "#include <sys/errno.h> /* ECONNREFUSED */" << endl;
+            src << "#include <netdb.h>" << endl;
+            src << "#include <netinet/in.h>" << endl;
+        } else {
+            // ???
+        }
+        src << "#include <stdlib.h> /* exit() */" << endl; // art uses it
+        src << "#include <string.h> /* strlen() */" << endl;// art uses it
+        src << "#include <unistd.h> /* unlink() */" << endl;// art uses it
+    } else {
+        cerr << "NYI at " << __FILE__ << ":" << __LINE__ << endl;
+    }
+
 
     if(tpl.multithreaded) {
         if("posix" == tpl.threading) {

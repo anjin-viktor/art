@@ -365,10 +365,15 @@ int domainLoader(CDomain &dom, chunkGetter &getter) {
         ,{&dom.float_handle, "float_handle", CCBOOL}
         ,{&dom.handle, "handle", CCSTR}
         ,{&dom.includesGlobal, "includesGlobal", CCBOOL}
+        ,{&dom.ccLabel, "ccLabel", CCSTR}
     };
+
 
     size_t nRecords = sizeof(records) / sizeof(local_record_t);
     ccload(chunk, records, nRecords);
+
+    if(dom.ccLabel == "<MISSING FIELD>")
+        dom.ccLabel.clear();
 
     getter.seekUntilNonCharsChunk(); // игнорируем все комментарии
 

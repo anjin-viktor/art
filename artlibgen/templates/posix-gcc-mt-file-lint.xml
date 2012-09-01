@@ -21,6 +21,7 @@
     float_handle="true"
     handle="void*"
     includesGlobal="true"
+    ccLabel="_STDLIB_H"
     >
     <!-- bad_handle -->
     <expr
@@ -161,6 +162,7 @@
     float_handle="false"
     handle="FILE*"
     includesGlobal="true"
+    ccLabel="_STDIO_H"
     >
 
     <!-- bad_handle -->
