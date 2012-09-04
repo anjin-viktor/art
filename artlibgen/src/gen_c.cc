@@ -315,7 +315,7 @@ void	Generator_C_Header(CTemplate &tpl, ofstream &head){
 
     head << "#ifndef __cplusplus" << endl;
 
-
+#if 0
     if(tpl.multithreaded){
         if(tpl.threading == "posix"){
             head << "#include <pthread.h>" << endl;
@@ -326,6 +326,7 @@ void	Generator_C_Header(CTemplate &tpl, ofstream &head){
         }
     }
     head << endl;
+#endif
 
     tpl_domains_size = tpl.domains.size();
     for(i = 0; i < tpl_domains_size; i++){
@@ -347,7 +348,7 @@ void	Generator_C_Header(CTemplate &tpl, ofstream &head){
         }
     }
     head << endl;
-
+#if 0
     if(tpl.compiler_type == "win32"){
         if(tpl.remote_mode){
             head << "#include <winsock2.h>" << endl;
@@ -372,10 +373,10 @@ void	Generator_C_Header(CTemplate &tpl, ofstream &head){
     } else {
         cerr << "NYI at " << __FILE__ << ":" << __LINE__ << endl;
     }
+#endif
 
 
-
-
+/*
     if(tpl.compiler_type == "gcc"){
         head << "typedef unsigned long long artuint64;" << endl;
     }
@@ -402,17 +403,17 @@ void	Generator_C_Header(CTemplate &tpl, ofstream &head){
     head << "extern int\tart_retval;" << endl;
     if(tpl.art_start_selfinit) {
         head << "extern char\tart_start_initialized;" << endl;
-    }
+    }*/
     head << endl;
-
+/*
     head << "char*\tartsize_t2str(size_t size);" << endl;
     for(t = 1; t <= ART_NUMBER_ARTUINT64TOSTR; t++){
         head << "char*\tartuint64tostr" << t << " (artuint64 value);" << endl;
     }
     head << "void\tarterrlog(char *msg, const char *file, size_t line);" << endl;
-    head << "void\tart_trace(int n, ...);" << endl;
+    head << "void\tart_trace(int n, ...);" << endl;*/
     head << "void\tart_start(const char *appname);" << endl;
-    head << "void\tart_stop(void);" << endl << endl;
+/*    head << "void\tart_stop(void);" << endl << endl;*/
 
     Generator_C_Header_Declaration(tpl, head);
     Generator_C_Header_Redefenition(tpl, head);
@@ -432,6 +433,53 @@ int	Generator_C_Source_ART_Part(CTemplate &tpl, char *tplfilename,
     src << "#define ART_NO_REDEF" << endl;
     src << "#include \"art.h\"" << endl << endl;
 
+    if(tpl.multithreaded){
+        if(tpl.threading == "posix"){
+            src << "#include <pthread.h>" << endl;
+        }
+        else if(tpl.threading == "win32"){
+            src << "#include <Windows.h>" << endl;
+            src << "#include <Winbase.h>" << endl;
+        }
+    }
+    src << endl;
+
+
+    if(tpl.compiler_type == "win32"){
+        if(tpl.remote_mode){
+            src << "#include <winsock2.h>" << endl;
+        } else {
+            // ???
+        }
+    } else if(tpl.compiler_type == "gcc") {
+        if(tpl.remote_mode){
+            src << "#include <sys/types.h>" << endl;
+            src << "#include <sys/socket.h>" << endl;
+            src << "#include <sys/errno.h> /* ECONNREFUSED */" << endl;
+            src << "#include <netdb.h>" << endl;
+            src << "#include <netinet/in.h>" << endl;
+        } else {
+            // ???
+        }
+        src << "#include <stdarg.h>" << endl;  // art uses it
+        src << "#include <stdio.h>" << endl;   // art uses it
+        src << "#include <stdlib.h> /* exit() */" << endl; // art uses it
+        src << "#include <string.h> /* strlen() */" << endl;// art uses it
+        src << "#include <unistd.h> /* unlink() */" << endl;// art uses it
+    } else {
+        cerr << "NYI at " << __FILE__ << ":" << __LINE__ << endl;
+    }
+
+
+
+    if(tpl.compiler_type == "gcc"){
+        src << "typedef unsigned long long artuint64;" << endl;
+    }
+    else if(tpl.compiler_type == "win32"){
+        src << "typedef unsigned __int64 artuint64;" << endl;
+    }
+
+
     if(tpl.multithreaded) {
         if("posix" == tpl.threading) {
             src << "pthread_mutex_t art_mutex = PTHREAD_MUTEX_INITIALIZER;"
@@ -439,14 +487,23 @@ int	Generator_C_Source_ART_Part(CTemplate &tpl, char *tplfilename,
         }
     }
 
+
+    src << "char*\tartsize_t2str(size_t size);" << endl;
+    for(t = 1; t <= ART_NUMBER_ARTUINT64TOSTR; t++){
+        src << "char*\tartuint64tostr" << t << " (artuint64 value);" << endl;
+    }
+    src << "void\tarterrlog(char *msg, const char *file, size_t line);" << endl;
+    src << "void\tart_trace(int n, ...);" << endl;
+    src << "void\tart_stop(void);" << endl << endl;
+
     if(tpl.remote_mode){
-        src << "int\tart_socket;" << endl;
+        src << "static int\tart_socket;" << endl;
     }
     else	{
-        src << "FILE*\tart_tracefile;" << endl;
+        src << "static FILE*\tart_tracefile;" << endl;
     }
-    src << "int\tart_stop_called;" << endl;
-    src << "int\tart_retval;" << endl;
+    src << "static int\tart_stop_called;" << endl;
+    src << "static int\tart_retval;" << endl;
 
     if(tpl.art_start_selfinit) {
         src << "char art_start_initialized = 0;" << endl;
